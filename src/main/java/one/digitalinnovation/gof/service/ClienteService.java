@@ -1,6 +1,9 @@
 package one.digitalinnovation.gof.service;
 
+import one.digitalinnovation.gof.dto.ClienteDTO;
 import one.digitalinnovation.gof.model.Cliente;
+
+import java.util.List;
 
 /**
  * Interface que define o padrão <b>Strategy</b> no domínio de cliente. Com
@@ -15,10 +18,11 @@ public interface ClienteService {
 
 	Cliente buscarPorId(Long id);
 
-	void inserir(Cliente cliente);
+	Cliente inserir(ClienteDTO cliente);
 
-	void atualizar(Long id, Cliente cliente);
+	Cliente atualizar(Long id, Cliente cliente);
 
 	void deletar(Long id);
 
+	List<Cliente> buscarPorEstado(String uf);
 }

@@ -1,5 +1,6 @@
 package one.digitalinnovation.gof.controller;
 
+import one.digitalinnovation.gof.dto.ClienteDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -13,6 +14,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import one.digitalinnovation.gof.model.Cliente;
 import one.digitalinnovation.gof.service.ClienteService;
+
+import java.util.List;
 
 /**
  * Esse {@link RestController} representa nossa <b>Facade</b>, pois abstrai toda
@@ -38,16 +41,21 @@ public class ClienteRestController {
 		return ResponseEntity.ok(clienteService.buscarPorId(id));
 	}
 
+	@GetMapping("/uf/{uf}")
+	public ResponseEntity<List<Cliente>> buscarPorEstado(@PathVariable String uf) {
+		return ResponseEntity.ok(clienteService.buscarPorEstado(uf));
+	}
+
 	@PostMapping
-	public ResponseEntity<Cliente> inserir(@RequestBody Cliente cliente) {
-		clienteService.inserir(cliente);
-		return ResponseEntity.ok(cliente);
+	public ResponseEntity<Cliente> inserir(@RequestBody ClienteDTO cliente) {
+		Cliente novo = clienteService.inserir(cliente);
+		return ResponseEntity.ok(novo);
 	}
 
 	@PutMapping("/{id}")
 	public ResponseEntity<Cliente> atualizar(@PathVariable Long id, @RequestBody Cliente cliente) {
-		clienteService.atualizar(id, cliente);
-		return ResponseEntity.ok(cliente);
+		var novoCliente = clienteService.atualizar(id, cliente);
+		return ResponseEntity.ok(novoCliente);
 	}
 
 	@DeleteMapping("/{id}")

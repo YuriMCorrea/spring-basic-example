@@ -1,8 +1,16 @@
 package one.digitalinnovation.gof.service.impl;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
+import one.digitalinnovation.gof.dto.ClienteDTO;
+import org.bouncycastle.asn1.x500.style.RFC4519Style;
+import org.jspecify.annotations.NonNull;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.crossstore.ChangeSetPersister;
 import org.springframework.stereotype.Service;
 
 import one.digitalinnovation.gof.model.Cliente;
@@ -16,7 +24,7 @@ import one.digitalinnovation.gof.service.ViaCepService;
  * Implementação da <b>Strategy</b> {@link ClienteService}, a qual pode ser
  * injetada pelo Spring (via {@link Autowired}). Com isso, como essa classe é um
  * {@link Service}, ela será tratada como um <b>Singleton</b>.
- * 
+ *
  * @author falvojr
  */
 @Service
@@ -29,7 +37,7 @@ public class ClienteServiceImpl implements ClienteService {
 	private EnderecoRepository enderecoRepository;
 	@Autowired
 	private ViaCepService viaCepService;
-	
+
 	// Strategy: Implementar os métodos definidos na interface.
 	// Facade: Abstrair integrações com subsistemas, provendo uma interface simples.
 
@@ -43,21 +51,22 @@ public class ClienteServiceImpl implements ClienteService {
 	public Cliente buscarPorId(Long id) {
 		// Buscar Cliente por ID.
 		Optional<Cliente> cliente = clienteRepository.findById(id);
-		return cliente.get();
+		return cliente.isPresent() ? cliente.get() : null;
 	}
 
 	@Override
-	public void inserir(Cliente cliente) {
-		salvarClienteComCep(cliente);
+	public Cliente inserir(ClienteDTO cliente) {
+		return salvarClienteComCep(cliente);
 	}
 
 	@Override
-	public void atualizar(Long id, Cliente cliente) {
+	public Cliente atualizar(Long id, Cliente cliente) {
 		// Buscar Cliente por ID, caso exista:
-		Optional<Cliente> clienteBd = clienteRepository.findById(id);
-		if (clienteBd.isPresent()) {
-			salvarClienteComCep(cliente);
-		}
+		Optional<Cliente> clienteBd = Optional.of(clienteRepository.findById(id).orElseThrow());
+		var toUpdate = clienteBd.get();
+		Endereco endereco = buscarEnderecoViaCep(cliente.getEndereco().getCep());
+		toUpdate.setEndereco(endereco);
+		return clienteRepository.save(toUpdate);
 	}
 
 	@Override
@@ -66,18 +75,34 @@ public class ClienteServiceImpl implements ClienteService {
 		clienteRepository.deleteById(id);
 	}
 
-	private void salvarClienteComCep(Cliente cliente) {
+	@Override
+	public List<Cliente> buscarPorEstado(String uf) {
+		if (uf.length() != 2) throw new RuntimeException("UF invalido.");
+		List<Endereco> enderecos =  enderecoRepository.findByUf(uf);
+		List<Cliente> clientes = new ArrayList<>();
+        for (Endereco e : enderecos) {
+            clientes.addAll(clienteRepository.findByEndereco(e));
+        }
+		return clientes;
+    }
+
+	private Cliente salvarClienteComCep(ClienteDTO cliente) {
 		// Verificar se o Endereco do Cliente já existe (pelo CEP).
-		String cep = cliente.getEndereco().getCep();
-		Endereco endereco = enderecoRepository.findById(cep).orElseGet(() -> {
+		Endereco endereco = buscarEnderecoViaCep(cliente.cep());
+		Cliente novoCliente = new Cliente();
+		novoCliente.setNome(cliente.name());
+		novoCliente.setEndereco(endereco);
+		// Inserir Cliente, vinculando o Endereco (novo ou existente).
+		return clienteRepository.save(novoCliente);
+	}
+
+	private Endereco buscarEnderecoViaCep(String cep) {
+		return enderecoRepository.findById(cep).orElseGet(() -> {
 			// Caso não exista, integrar com o ViaCEP e persistir o retorno.
 			Endereco novoEndereco = viaCepService.consultarCep(cep);
 			enderecoRepository.save(novoEndereco);
 			return novoEndereco;
 		});
-		cliente.setEndereco(endereco);
-		// Inserir Cliente, vinculando o Endereco (novo ou existente).
-		clienteRepository.save(cliente);
 	}
 
 }

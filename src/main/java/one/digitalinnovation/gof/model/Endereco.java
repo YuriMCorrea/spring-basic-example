@@ -1,7 +1,7 @@
 package one.digitalinnovation.gof.model;
 
-import javax.persistence.Entity;
-import javax.persistence.Id;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
 
 /**
  * Os atributos desse modelo foram gerados automaticamente pelo site
@@ -10,7 +10,7 @@ import javax.persistence.Id;
  * @see <a href="https://www.jsonschema2pojo.org">jsonschema2pojo.org</a>
  * @see <a href="https://viacep.com.br">ViaCEP</a>
  * 
- * @author falvojr
+ * @author Yuri
  */
 @Entity
 public class Endereco {
